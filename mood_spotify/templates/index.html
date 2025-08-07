@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎧 MoodMate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans p-4">
+  <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">🎭 MoodMate - How are you feeling?</h1>
+
+    <div id="chat" class="space-y-4 mb-4 overflow-y-auto max-h-96">
+      <!-- Messages will appear here -->
+    </div>
+
+    <form id="chat-form" class="flex items-center space-x-2">
+      <input
+        type="text"
+        id="user-input"
+        placeholder="Type how you feel..."
+        class="flex-1 p-2 border rounded"
+        required
+      />
+      <button
+        type="submit"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Send
+      </button>
+    </form>
+
+    <div id="playlists" class="mt-6 hidden">
+      <h2 class="text-xl font-semibold mb-2">🎶 Playlists for your mood</h2>
+      <ul id="playlist-list" class="space-y-3"></ul>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("user-input");
+    const chatBox = document.getElementById("chat");
+    const playlistsDiv = document.getElementById("playlists");
+    const playlistList = document.getElementById("playlist-list");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      // Show user message
+      chatBox.innerHTML += `
+        <div class="text-right">
+          <p class="inline-block bg-blue-100 px-4 py-2 rounded-lg">${userText}</p>
+        </div>
+      `;
+      input.value = "";
+      input.focus();
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText }),
+      });
+
+      const data = await res.json();
+
+      // Show bot response
+      chatBox.innerHTML += `
+        <div class="text-left">
+          <p class="inline-block bg-gray-100 px-4 py-2 rounded-lg">${data.response}</p>
+        </div>
+      `;
+
+      // Scroll to bottom
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Show playlists if available
+      if (data.playlists && data.playlists.length > 0) {
+        playlistsDiv.classList.remove("hidden");
+        playlistList.innerHTML = data.playlists.map(p => `
+          <li class="flex items-center space-x-3 border rounded p-2">
+            <img src="${p.image}" alt="cover" class="w-12 h-12 rounded" />
+            <a href="${p.url}" target="_blank" class="text-blue-600 font-medium">${p.name}</a>
+          </li>
+        `).join('');
+      } else {
+        playlistsDiv.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
